@@ -368,16 +368,12 @@ alerts
 
 ## 16. Следующие шаги
 
-1. Создать структуру .NET solution:
-   - `IoT.Api.Host` — единственный ASP.NET Core host, собирает и `/ingest/*`, и `/api/*`
-   - `IoT.Ingest` — модуль приёма от устройств (device-token auth)
-   - `IoT.Api` — модуль пользовательского API (JWT auth) + SignalR hub
-   - `IoT.Workers` — worker-сервисы (consumer'ы Kafka) — отдельный host
-   - `IoT.Domain` — сущности и бизнес-логика
-   - `IoT.Infrastructure` — доступ к БД, Kafka, внешним сервисам
-   - `IoT.Shared` — общие контракты и утилиты
-2. Поднять `docker-compose.yml` с Postgres+TimescaleDB
-3. Миграции: `tenants`, `users`, `devices`, `device_tokens`, `telemetry`
+1. ~~Создать структуру .NET solution~~ ✅
+   - `IoT.Api.Host`, `IoT.Ingest`, `IoT.Api`, `IoT.Workers`, `IoT.Domain`, `IoT.Infrastructure`, `IoT.Shared` — созданы, зависимости настроены, сущности домена и EF-конфигурации готовы, билд чистый
+2. ~~Поднять `docker-compose.yml` с Postgres+TimescaleDB~~ ✅
+   - `timescale/timescaledb:latest-pg16`, контейнер `iot_postgres`, порт 5432, TimescaleDB 2.26.3 доступен
+3. ~~Миграции: `tenants`, `users`, `devices`, `device_tokens`, `telemetry`~~ ✅
+   - Таблицы `tenants`, `users`, `devices`, `device_tokens`, `telemetry` созданы; `telemetry` — TimescaleDB hypertable с партиционированием по 1 дню
 4. JWT-аутентификация пользователей + регистрация
 5. Endpoint `/ingest` с токеном устройства → прямая запись в БД (без Kafka)
 6. Admin-эндпоинты: создание устройства, выпуск токена

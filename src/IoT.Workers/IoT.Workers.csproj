@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-IoT.Workers-f385afd9-14f1-4794-adc9-758dd0907b94</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IoT.Domain\IoT.Domain.csproj" />
+    <ProjectReference Include="..\IoT.Infrastructure\IoT.Infrastructure.csproj" />
+    <ProjectReference Include="..\IoT.Shared\IoT.Shared.csproj" />
+  </ItemGroup>
+</Project>

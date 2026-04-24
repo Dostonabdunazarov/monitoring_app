@@ -52,3 +52,15 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# User secrets and local overrides
+appsettings.Local.json
+secrets.json
+
+# Docker volumes (local data)
+.docker/
+
+# IDE and tools
+.vs/
+.claude/
+*.csproj.user
