@@ -375,6 +375,7 @@ alerts
 3. ~~Миграции: `tenants`, `users`, `devices`, `device_tokens`, `telemetry`~~ ✅
    - Таблицы `tenants`, `users`, `devices`, `device_tokens`, `telemetry` созданы; `telemetry` — TimescaleDB hypertable с партиционированием по 1 дню
 4. JWT-аутентификация пользователей + регистрация
+   - В код добавлены `/api/auth/register`, `/api/auth/login`, `/api/auth/me`, выдача JWT с `tenant_id` и `role`, хэширование паролей через bcrypt; требуется финальная проверка после установки `dotnet` в окружении и запуска БД
 5. Endpoint `/ingest` с токеном устройства → прямая запись в БД (без Kafka)
 6. Admin-эндпоинты: создание устройства, выпуск токена
 7. Переход на Этап 2: добавить Kafka между API и записью в БД

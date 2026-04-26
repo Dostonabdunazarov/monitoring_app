@@ -1,9 +1,14 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\IoT.Domain\IoT.Domain.csproj" />
     <ProjectReference Include="..\IoT.Infrastructure\IoT.Infrastructure.csproj" />
     <ProjectReference Include="..\IoT.Shared\IoT.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
   </ItemGroup>
 
   <PropertyGroup>
