@@ -374,10 +374,12 @@ alerts
    - `timescale/timescaledb:latest-pg16`, контейнер `iot_postgres`, порт 5432, TimescaleDB 2.26.3 доступен
 3. ~~Миграции: `tenants`, `users`, `devices`, `device_tokens`, `telemetry`~~ ✅
    - Таблицы `tenants`, `users`, `devices`, `device_tokens`, `telemetry` созданы; `telemetry` — TimescaleDB hypertable с партиционированием по 1 дню
-4. JWT-аутентификация пользователей + регистрация
-   - В код добавлены `/api/auth/register`, `/api/auth/login`, `/api/auth/me`, выдача JWT с `tenant_id` и `role`, хэширование паролей через bcrypt; требуется финальная проверка после установки `dotnet` в окружении и запуска БД
-5. Endpoint `/ingest` с токеном устройства → прямая запись в БД (без Kafka)
-6. Admin-эндпоинты: создание устройства, выпуск токена
+4. ~~JWT-аутентификация пользователей + регистрация~~ ✅
+   - В коде реализованы `/api/auth/register`, `/api/auth/login`, `/api/auth/me`, выдача JWT с `tenant_id` и `role`, хэширование паролей через bcrypt; `dotnet build IoT.MonitoringApp.slnx` проходит успешно
+5. ~~Endpoint `/ingest` с токеном устройства → прямая запись в БД (без Kafka)~~ ✅
+   - Реализован `POST /ingest` с Bearer device-token, прямой записью telemetry в БД и дедупликацией по `device_id + message_id`; для совместимости оставлен `POST /ingest/telemetry`, сборка решения проходит успешно
+6. ~~Admin-эндпоинты: создание устройства, выпуск токена~~ ✅
+   - Реализованы `POST /api/devices` и `POST /api/devices/{deviceId}/tokens`, оба доступны только пользователю с ролью `Admin`; выпуск токена сохраняет в БД только его хэш
 7. Переход на Этап 2: добавить Kafka между API и записью в БД
 
 ---

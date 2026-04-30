@@ -48,6 +48,7 @@ public static class DependencyInjection
     public static IEndpointRouteBuilder MapApiModule(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapAuthEndpoints();
+        endpoints.MapDeviceEndpoints();
         return endpoints;
     }
 }
