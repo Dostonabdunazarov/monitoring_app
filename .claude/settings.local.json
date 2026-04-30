@@ -4,7 +4,9 @@
       "Bash(xargs grep *)",
       "Bash(dotnet run *)",
       "Bash(taskkill /PID 31932 /F)",
-      "Bash(taskkill /PID 58488 /F)"
+      "Bash(taskkill /PID 58488 /F)",
+      "Bash(dotnet remove *)",
+      "Bash(dotnet add *)"
     ]
   }
 }

@@ -1,12 +1,9 @@
 import client from './client';
-import type { DeviceDto, CreateDeviceRequest, UpdateDeviceRequest } from '../types';
+import type { DeviceDto, CreateDeviceRequest, UpdateDeviceRequest, DeviceTokenDto } from '../types';
 
 export const devicesApi = {
-  getAll: (params?: { status?: string; tenantId?: string }) =>
-    client.get<DeviceDto[]>('/api/devices', { params }),
-
-  getById: (id: string) =>
-    client.get<DeviceDto>(`/api/devices/${id}`),
+  getAll: () =>
+    client.get<DeviceDto[]>('/api/devices'),
 
   create: (data: CreateDeviceRequest) =>
     client.post<DeviceDto>('/api/devices', data),
@@ -16,4 +13,7 @@ export const devicesApi = {
 
   delete: (id: string) =>
     client.delete(`/api/devices/${id}`),
+
+  issueToken: (id: string) =>
+    client.post<DeviceTokenDto>(`/api/devices/${id}/tokens`),
 };

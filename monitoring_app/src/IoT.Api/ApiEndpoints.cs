@@ -19,6 +19,8 @@ public static class ApiEndpoints
         var devices = app.MapGroup("/api/devices").RequireAuthorization().WithTags("Devices");
         devices.MapGet("/", GetDevicesAsync);
         devices.MapPost("/", CreateDeviceAsync).RequireAuthorization(policy => policy.RequireRole(UserRole.Admin.ToString()));
+        devices.MapPut("/{deviceId:guid}", UpdateDeviceAsync).RequireAuthorization(policy => policy.RequireRole(UserRole.Admin.ToString()));
+        devices.MapDelete("/{deviceId:guid}", DeleteDeviceAsync).RequireAuthorization(policy => policy.RequireRole(UserRole.Admin.ToString()));
         devices.MapPost("/{deviceId:guid}/tokens", IssueDeviceTokenAsync).RequireAuthorization(policy => policy.RequireRole(UserRole.Admin.ToString()));
         devices.MapGet("/{deviceId:guid}/telemetry", GetTelemetryAsync);
 
@@ -76,6 +78,45 @@ public static class ApiEndpoints
         await db.SaveChangesAsync(cancellationToken);
 
         return Results.Created($"/api/devices/{device.Id}", new DeviceResponse(device.Id, device.Name, device.Type, device.Status.ToString(), device.CreatedAt));
+    }
+
+    private static async Task<IResult> UpdateDeviceAsync(
+        Guid deviceId,
+        UpdateDeviceRequest request,
+        ClaimsPrincipal principal,
+        AppDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var tenantId = principal.GetTenantId();
+        if (tenantId is null) return Results.Forbid();
+
+        var device = await db.Devices.FirstOrDefaultAsync(d => d.Id == deviceId && d.TenantId == tenantId, cancellationToken);
+        if (device is null) return Results.NotFound();
+
+        if (!string.IsNullOrWhiteSpace(request.Name)) device.Name = request.Name.Trim();
+        if (!string.IsNullOrWhiteSpace(request.Type)) device.Type = request.Type.Trim();
+        if (request.Status is not null && Enum.TryParse<DeviceStatus>(request.Status, ignoreCase: true, out var parsed))
+            device.Status = parsed;
+
+        await db.SaveChangesAsync(cancellationToken);
+        return Results.Ok(new DeviceResponse(device.Id, device.Name, device.Type, device.Status.ToString(), device.CreatedAt));
+    }
+
+    private static async Task<IResult> DeleteDeviceAsync(
+        Guid deviceId,
+        ClaimsPrincipal principal,
+        AppDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var tenantId = principal.GetTenantId();
+        if (tenantId is null) return Results.Forbid();
+
+        var device = await db.Devices.FirstOrDefaultAsync(d => d.Id == deviceId && d.TenantId == tenantId, cancellationToken);
+        if (device is null) return Results.NotFound();
+
+        db.Devices.Remove(device);
+        await db.SaveChangesAsync(cancellationToken);
+        return Results.NoContent();
     }
 
     private static async Task<IResult> IssueDeviceTokenAsync(
@@ -151,6 +192,7 @@ public static class ApiEndpoints
 }
 
 public record CreateDeviceRequest(string Name, string Type);
+public record UpdateDeviceRequest(string? Name, string? Type, string? Status);
 public record DeviceResponse(Guid Id, string Name, string Type, string Status, DateTimeOffset CreatedAt);
 public record DeviceTokenResponse(string Token, Guid TokenId, DateTimeOffset CreatedAt);
 public record TelemetryResponse(Guid DeviceId, Guid MessageId, DateTimeOffset Timestamp, double? Temperature, double? Humidity, object? Payload);

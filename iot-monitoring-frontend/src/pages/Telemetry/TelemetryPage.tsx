@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Search } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { telemetryApi } from '../../api/telemetry';
 import { devicesApi } from '../../api/devices';
 import TelemetryChart from '../../components/TelemetryChart';
@@ -12,31 +11,27 @@ const RANGES = [
   { label: '7d', minutes: 10080 },
 ];
 
+type MetricKey = 'temperature' | 'humidity';
+
 export default function TelemetryPage() {
   const [devices, setDevices] = useState<DeviceDto[]>([]);
   const [selectedDevice, setSelectedDevice] = useState('');
   const [range, setRange] = useState(60);
-  const [metric, setMetric] = useState('');
+  const [metric, setMetric] = useState<MetricKey>('temperature');
   const [data, setData] = useState<TelemetryDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [queried, setQueried] = useState(false);
 
   useEffect(() => {
-    devicesApi
-      .getAll()
-      .then((res) => setDevices(res.data))
-      .catch(() => {});
+    devicesApi.getAll().then((res) => setDevices(res.data)).catch(() => {});
   }, []);
 
   const handleQuery = () => {
+    if (!selectedDevice) return;
     setLoading(true);
     const from = new Date(Date.now() - range * 60 * 1000).toISOString();
     telemetryApi
-      .query({
-        deviceId: selectedDevice || undefined,
-        metric: metric || undefined,
-        from,
-      })
+      .getByDevice(selectedDevice, { from, limit: 500 })
       .then((res) => {
         setData(res.data);
         setQueried(true);
@@ -45,23 +40,10 @@ export default function TelemetryPage() {
       .finally(() => setLoading(false));
   };
 
-  // Build per-device series for multi-device overlay chart
-  const chartSeries = useMemo(() => {
-    if (data.length === 0) return [];
-
-    const byDevice = new Map<string, TelemetryDto[]>();
-    const sorted = [...data].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-    sorted.forEach((t) => {
-      const arr = byDevice.get(t.deviceId) ?? [];
-      arr.push(t);
-      byDevice.set(t.deviceId, arr);
-    });
-
-    return Array.from(byDevice.entries()).map(([deviceId, points]) => {
-      const dev = devices.find((d) => d.id === deviceId);
-      return { label: dev?.name ?? deviceId, data: points };
-    });
-  }, [data, devices]);
+  const sorted = [...data].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  const chartData = sorted
+    .filter((t) => t[metric] !== null)
+    .map((t) => ({ ts: t.timestamp, value: t[metric] as number }));
 
   return (
     <div className="space-y-5">
@@ -73,40 +55,32 @@ export default function TelemetryPage() {
       {/* Query bar */}
       <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
         <div className="flex flex-wrap gap-3 items-end">
-          {/* Device select */}
           <div className="flex-1 min-w-40">
-            <label className="block text-xs text-gray-500 mb-1">Device</label>
+            <label className="block text-xs text-gray-500 mb-1">Device *</label>
             <select
               value={selectedDevice}
               onChange={(e) => setSelectedDevice(e.target.value)}
               className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-violet-500 transition-colors"
             >
-              <option value="">All devices</option>
+              <option value="">Select a device…</option>
               {devices.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
+                <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
           </div>
 
-          {/* Metric */}
           <div className="flex-1 min-w-40">
             <label className="block text-xs text-gray-500 mb-1">Metric</label>
-            <div className="relative">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-              <input
-                type="text"
-                placeholder="e.g. temperature"
-                value={metric}
-                onChange={(e) => setMetric(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleQuery()}
-                className="w-full pl-8 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
-              />
-            </div>
+            <select
+              value={metric}
+              onChange={(e) => setMetric(e.target.value as MetricKey)}
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-violet-500 transition-colors"
+            >
+              <option value="temperature">Temperature</option>
+              <option value="humidity">Humidity</option>
+            </select>
           </div>
 
-          {/* Time range */}
           <div>
             <label className="block text-xs text-gray-500 mb-1">Range</label>
             <div className="flex items-center bg-gray-800 rounded-lg border border-gray-700 p-0.5">
@@ -115,9 +89,7 @@ export default function TelemetryPage() {
                   key={r.minutes}
                   onClick={() => setRange(r.minutes)}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                    range === r.minutes
-                      ? 'bg-violet-600 text-white'
-                      : 'text-gray-400 hover:text-gray-200'
+                    range === r.minutes ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-gray-200'
                   }`}
                 >
                   {r.label}
@@ -128,7 +100,7 @@ export default function TelemetryPage() {
 
           <button
             onClick={handleQuery}
-            disabled={loading}
+            disabled={loading || !selectedDevice}
             className="px-4 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
           >
             {loading ? 'Loading…' : 'Query'}
@@ -140,9 +112,14 @@ export default function TelemetryPage() {
       {queried && (
         <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
           <h3 className="text-sm font-medium text-white mb-4">
-            {metric ? metric : 'All metrics'} — {RANGES.find((r) => r.minutes === range)?.label}
+            {metric} — {RANGES.find((r) => r.minutes === range)?.label}
           </h3>
-          <TelemetryChart series={chartSeries} height={260} />
+          <TelemetryChart
+            data={chartData}
+            label={metric}
+            unit={metric === 'temperature' ? '°C' : '%'}
+            height={260}
+          />
         </div>
       )}
 
@@ -150,7 +127,7 @@ export default function TelemetryPage() {
       <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
         {!queried ? (
           <div className="px-5 py-12 text-center text-gray-500 text-sm">
-            Configure the filters above and click Query
+            Select a device and click Query
           </div>
         ) : data.length === 0 ? (
           <div className="px-5 py-12 text-center text-gray-500 text-sm">
@@ -161,25 +138,22 @@ export default function TelemetryPage() {
             <thead>
               <tr className="border-b border-gray-800">
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Time</th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Device</th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Metric</th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Value</th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Temperature</th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Humidity</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
-              {data.map((t) => {
-                const dev = devices.find((d) => d.id === t.deviceId);
-                return (
-                  <tr key={t.id} className="hover:bg-gray-800/40 transition-colors">
-                    <td className="px-5 py-2.5 text-gray-500">{new Date(t.timestamp).toLocaleString()}</td>
-                    <td className="px-5 py-2.5 text-gray-300">{dev?.name ?? t.deviceId}</td>
-                    <td className="px-5 py-2.5 text-gray-300">{t.metric}</td>
-                    <td className="px-5 py-2.5 text-white font-mono">
-                      {t.value} {t.unit ?? ''}
-                    </td>
-                  </tr>
-                );
-              })}
+              {data.map((t) => (
+                <tr key={t.messageId} className="hover:bg-gray-800/40 transition-colors">
+                  <td className="px-5 py-2.5 text-gray-500">{new Date(t.timestamp).toLocaleString()}</td>
+                  <td className="px-5 py-2.5 text-white font-mono">
+                    {t.temperature !== null ? `${t.temperature} °C` : <span className="text-gray-600">—</span>}
+                  </td>
+                  <td className="px-5 py-2.5 text-white font-mono">
+                    {t.humidity !== null ? `${t.humidity} %` : <span className="text-gray-600">—</span>}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         )}

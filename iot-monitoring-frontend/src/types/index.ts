@@ -18,25 +18,29 @@ export interface DeviceDto {
   id: string;
   name: string;
   type: string;
-  status: 'online' | 'offline' | 'error';
-  lastSeen: string;
-  tenantId: string;
+  status: 'Active' | 'Inactive' | 'Offline';
+  createdAt: string;
 }
 
 export interface TelemetryDto {
-  id: string;
   deviceId: string;
+  messageId: string;
   timestamp: string;
-  metric: string;
-  value: number;
-  unit?: string;
+  temperature: number | null;
+  humidity: number | null;
+  payload: unknown;
 }
 
 export interface TelemetryQueryParams {
-  deviceId?: string;
-  metric?: string;
   from?: string;
   to?: string;
+  limit?: number;
+}
+
+export interface DeviceTokenDto {
+  token: string;
+  tokenId: string;
+  createdAt: string;
 }
 
 export interface LoginRequest {
@@ -53,10 +57,13 @@ export interface LoginResponse {
 export interface CreateDeviceRequest {
   name: string;
   type: string;
-  tenantId: string;
 }
 
-export type UpdateDeviceRequest = Partial<CreateDeviceRequest>;
+export interface UpdateDeviceRequest {
+  name?: string;
+  type?: string;
+  status?: string;
+}
 
 export interface CreateUserRequest {
   email: string;
