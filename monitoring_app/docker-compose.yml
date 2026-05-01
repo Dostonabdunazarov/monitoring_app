@@ -57,8 +57,8 @@ services:
       dockerfile: iot-monitoring-frontend/Dockerfile
     container_name: iot_frontend
     environment:
-      VITE_API_BASE_URL: http://localhost:5050
-      VITE_WS_URL: ws://localhost:5050
+      VITE_API_BASE_URL: http://api:8080
+      VITE_WS_URL: ws://api:8080
     ports:
       - "5173:5173"
     depends_on:
