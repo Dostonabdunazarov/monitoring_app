@@ -53,11 +53,18 @@ public class ModbusGatewayWorker(
         var factory = new ModbusFactory();
         using var master = factory.CreateMaster(tcpClient);
 
+        // ТРМ1 хранит температуру как float IEEE 754 в двух Input Registers (функция 0x04)
         var registers = await Task.Run(
-            () => master.ReadHoldingRegisters(_opts.SlaveAddress, _opts.TemperatureRegister, 1),
+            () => master.ReadInputRegisters(_opts.SlaveAddress, _opts.TemperatureRegister, 2),
             ct);
 
-        return registers[0] * _opts.TemperatureScale;
+        byte[] bytes = [
+            (byte)(registers[1] & 0xFF),
+            (byte)(registers[1] >> 8),
+            (byte)(registers[0] & 0xFF),
+            (byte)(registers[0] >> 8),
+        ];
+        return BitConverter.ToSingle(bytes, 0) * _opts.TemperatureScale;
     }
 
     private async Task SaveTelemetryAsync(double temperature, CancellationToken ct)

@@ -28,13 +28,13 @@ services:
       dockerfile: monitoring_app/docker/api.Dockerfile
     container_name: iot_api
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Default: Host=postgres;Port=5432;Database=iot_monitoring;Username=iot_user;Password=iot_password
       Cors__AllowedOrigins__0: http://localhost:5173
       Cors__AllowedOrigins__1: http://127.0.0.1:5173
     ports:
-      - "5000:8080"
+      - "5050:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -57,8 +57,8 @@ services:
       dockerfile: iot-monitoring-frontend/Dockerfile
     container_name: iot_frontend
     environment:
-      VITE_API_BASE_URL: http://localhost:5000
-      VITE_WS_URL: ws://localhost:5000
+      VITE_API_BASE_URL: http://localhost:5050
+      VITE_WS_URL: ws://localhost:5050
     ports:
       - "5173:5173"
     depends_on:
