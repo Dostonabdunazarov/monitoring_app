@@ -1,7 +1,6 @@
 using System.Net.Sockets;
 using IoT.Domain.Entities;
 using IoT.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using NModbus;
 
@@ -51,11 +50,12 @@ public class ModbusGatewayWorker(
         await tcpClient.ConnectAsync(_opts.Host, _opts.Port, ct);
 
         var factory = new ModbusFactory();
-        using var master = factory.CreateMaster(tcpClient);
+        using var adapter = new NModbus.IO.TcpClientAdapter(tcpClient);
+        using var master = factory.CreateIpMaster(adapter);
 
-        // ТРМ1 хранит температуру как float IEEE 754 в двух Input Registers (функция 0x04)
+        // ТРМ читает температуру как Float32 IEEE 754 в двух Holding Registers (функция 0x03)
         var registers = await Task.Run(
-            () => master.ReadInputRegisters(_opts.SlaveAddress, _opts.TemperatureRegister, 2),
+            () => master.ReadHoldingRegisters(_opts.SlaveAddress, _opts.TemperatureRegister, 2),
             ct);
 
         byte[] bytes = [
